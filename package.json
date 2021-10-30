@@ -1,0 +1,26 @@
+{
+  "name": "typescript-transform-wx-cloud",
+  "version": "1.0.0",
+  "description": "TypeScript 函数转微信小程序云函数",
+  "main": "index.js",
+  "license": "MIT",
+  "repository": "git@github.com:lip8up/typescript-transform-wx-cloud.git",
+  "author": "lip8up <lip8up@qq.com>",
+  "scripts": {
+    "runner": "ts-node src/runner.ts"
+  },
+  "dependencies": {
+    "common-tags": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/common-tags": "^1.8.1",
+    "@types/node": "^16.11.6",
+    "ts-node": "^10.4.0",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.4"
+  },
+  "peerDependencies": {
+    "tslib": "*",
+    "typescript": ">=3.7.0"
+  }
+}
