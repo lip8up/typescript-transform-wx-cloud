@@ -8,23 +8,21 @@
     "baseUrl": ".",
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "removeComments": true,
     "useUnknownInCatchVariables": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "rootDir": ".",
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "declarationDir": ".",
     "lib": [
       "esnext"
     ],
     "types": [
-      "node"
-    ],
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    }
+      "node",
+      "jest"
+    ]
   },
   "include": [
     "src"
@@ -33,6 +31,7 @@
     "node_modules"
   ],
   "ts-node": {
+    "transpileOnly": true,
     "compilerOptions": {
       "module": "commonjs"
     }

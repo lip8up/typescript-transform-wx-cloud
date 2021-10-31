@@ -37,27 +37,36 @@ export interface FunctionItem {
  *
  * @param functions 函数列表配置
  */
-export const template = (functions: FunctionItem[]) => {
+export const defaultTemplate = (functions: FunctionItem[]) => {
+  const fns = functions.map(({ name, params }) => ({
+    name,
+    Name: ucfirst(name),
+    paramsText: paramsLiteral(params),
+    objectText: objectLiteral(params),
+  }))
+  // prettier-ignore
   const text = source`
-    ${functions.map(({ name }) => source`
-      import type function${ucfirst(name)} from '@cloud/functions/${name}'
+    ${fns.map(({ name, Name }) => source`
+      import type function${Name} from '@cloud/functions/${name}'
     `)}
 
-    type PromiseReturnType<T extends (...args: any) => any> = (...args: Parameters<T>) => ReturnType<T> extends Promise<infer _> ? ReturnType<T> : Promise<ReturnType<T>>
+    type PromiseType<T> = T extends Promise<infer _> ? T : Promise<T>
 
-    ${functions.map(({ name, params }) => source`
-      export const cloud${ucfirst(name)}: PromiseReturnType<typeof function${ucfirst(name)}> = ${paramsLiteral(params)} => {
-        return wx.cloud.callFunction({ name: '${name}', data: ${objectLiteral(params)} }).then(res => res.result as any)
+    type PromiseReturnType<T extends (...args: any) => any> = (...args: Parameters<T>) => PromiseType<ReturnType<T>>
+
+    ${fns.map(({ name, Name, paramsText, objectText }) => source`
+      export const cloud${Name}: PromiseReturnType<typeof function${Name}> = ${paramsText} => {
+        return wx.cloud.callFunction({ name: '${name}', data: ${objectText} }).then(res => res.result as any)
       }
     `).join('\n\n')}
 
     export default {
-      ${functions.map(({ name }) => source`
-        ${name}: cloud${ucfirst(name)}
+      ${fns.map(({ name, Name }) => source`
+        ${name}: cloud${Name}
       `).join(',\n')}
     }
   `
   return text
 }
 
-export default template
+export default defaultTemplate

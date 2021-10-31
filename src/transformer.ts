@@ -1,13 +1,15 @@
-import ts, { TransformationContext, Transformer, SourceFile, Visitor, Node } from 'typescript'
+import ts, { factory } from 'typescript'
+import {
+  createFunctionDeclaration,
+  cloneFunctionDeclaration,
+  createParameterDeclaration,
+  createSingleVariableStatement,
+  findChildByType,
+  findTopLevelFunctionByIdentifier
+} from './util'
 
-const factory = ts.factory
 const wxCloudFunctionName = 'main'
 const wxCloudParamName = 'event'
-
-function generateWxParams(parameters: ts.NodeArray<ts.ParameterDeclaration>) {
-  const callParams = parameters.map(param => {
-  })
-}
 
 /**
  * 生成微信导出函数。
@@ -24,95 +26,117 @@ function generateWxParams(parameters: ts.NodeArray<ts.ParameterDeclaration>) {
  * }
  * ```
  *
- * @param idDefault   默认导出的函数
- * @param parameters  函数参数
+ * @param func 导出的函数
+ * @param parameters 函数参数
  */
-function generateWxMain(idDefault: ts.Identifier, parameters: ts.NodeArray<ts.ParameterDeclaration>) {
+function generateWxMain(func: ts.Identifier, params: ts.NodeArray<ts.ParameterDeclaration>) {
   const cloudParam = factory.createIdentifier(wxCloudParamName)
-  const callParams = parameters.map(param => {
+  const wxParams: string[] = []
+  const callParams = params.map(param => {
+    const name = param.name as ts.Identifier
+    wxParams.push(name.escapedText.toString())
+    return factory.createPropertyAccessExpression(cloudParam, name)
   })
-  factory.createFunctionDeclaration(
-    undefined,
-    [
+  // export async function main(event: any) {
+  //   return default_1(event.a, event.b)
+  // }
+  // prettier-ignore
+  const wxMain = createFunctionDeclaration({
+    modifiers: [
       factory.createModifier(ts.SyntaxKind.ExportKeyword),
       factory.createModifier(ts.SyntaxKind.AsyncKeyword)
     ],
-    undefined,
-    factory.createIdentifier(wxCloudFunctionName),
-    undefined,
-    [factory.createParameterDeclaration(
-      undefined,
-      undefined,
-      undefined,
-      cloudParam,
-      undefined,
-      factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
-      undefined
-    )],
-    undefined,
-    factory.createBlock(
-      [factory.createReturnStatement(factory.createCallExpression(
-        idDefault,
-        undefined,
-        [
-          factory.createPropertyAccessExpression(
-            cloudParam,
-            factory.createIdentifier("a")
-          ),
-          factory.createPropertyAccessExpression(
-            cloudParam,
-            factory.createIdentifier("b")
-          )
-        ]
-      ))],
+    name: factory.createIdentifier(wxCloudFunctionName),
+    parameters: createParameterDeclaration({ name: cloudParam }),
+    body: factory.createBlock(
+      [
+        // return default_1(event.a, event.b)
+        factory.createReturnStatement(
+          factory.createCallExpression(func, undefined, callParams)
+        )
+      ],
       true
     )
-  )
+  })
+  return { wxMain, wxParams }
 }
 
-function updateExportAssignment(node: Node, ctx: TransformationContext) {
-  const nodeList: Node[] = []
+/**
+ * 处理 export default async (a: number, b: number) => {} 语句
+ *
+ * @param node 节点
+ */
+function dealExportAssignment(node: ts.ExportAssignment) {
+  // export default async (a: number, b: number) => {}
+  const arrowFunction = findChildByType<ts.ArrowFunction>(node, ts.isArrowFunction)
+  if (arrowFunction != null) {
+    // const default_1 = <original arrow function>
+    const name = factory.createUniqueName('default')
+    const declDefault = createSingleVariableStatement(name, arrowFunction)
+    // TODO: use params
+    const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters)
 
-  const exportAssignment = node as ts.ExportAssignment
-  const exprNode = exportAssignment.expression
-
-  // const visitor: Visitor = node => {
-    if (ts.isArrowFunction(exprNode)) {
-      const idDefault = factory.createUniqueName('default')
-      const declaration = factory.createVariableDeclaration(idDefault, undefined, undefined, exprNode)
-      const declarationList = factory.createVariableDeclarationList([declaration], ts.NodeFlags.Const)
-      const statement = factory.createVariableStatement(undefined, declarationList)
-      nodeList.push(statement)
-
-      return statement
-
-      const arrowFunction = node as ts.ArrowFunction
-      const parameters = arrowFunction.parameters
-
-
-    }
-
-    // return ts.visitEachChild(node, visitor, ctx)
-  // }
-
-  // const remain = ts.visitEachChild(node, visitor, ctx)
-
-  return node
-
-  // return [ ...nodeList, remain ]
-}
-
-function transformer(ctx: TransformationContext): Transformer<SourceFile> {
-  const visitor: Visitor = node => {
-    if (ts.isExportAssignment(node)) {
-      return updateExportAssignment(node, ctx)
-    }
-
-    return ts.visitEachChild(node, visitor, ctx)
+    return [ declDefault, wxMain ]
   }
 
-  return (sf: SourceFile) => {
-    return ts.visitNode(sf, visitor)
+  // export default sum
+  const name = findChildByType<ts.Identifier>(node, ts.isIdentifier)
+  if (name != null) {
+    const func = findTopLevelFunctionByIdentifier(node.getSourceFile(), name)
+    if (func != null) {
+      // TODO: use params
+      const { wxMain, wxParams } = generateWxMain(name, func.parameters)
+      return wxMain
+    }
+  }
+
+  return node
+}
+
+/**
+ * 处理 export default function(a: number, b: number) {} 语句
+ *
+ * @param node 节点
+ */
+function dealExportDefaultFunction(node: ts.FunctionDeclaration) {
+  // 若函数没有名字，则生成一个
+  const name = node.name ?? factory.createUniqueName('default')
+  // 去掉 export、default 关键字
+  const modifiers = node.modifiers?.filter(
+    mod => mod.kind != ts.SyntaxKind.DefaultKeyword && mod.kind != ts.SyntaxKind.ExportKeyword
+  )
+  // 复制一个新的函数
+  const newFunc = cloneFunctionDeclaration(node, { modifiers, name })
+  // TODO: use params
+  const { wxMain, wxParams } = generateWxMain(name, node.parameters)
+
+  return [ newFunc, wxMain ]
+}
+
+function transformer(ctx: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
+  const visitor: ts.Visitor = node => {
+    // export default async (a: number, b: number) => {}
+    // export default sum
+    if (ts.isExportAssignment(node)) {
+      return dealExportAssignment(node)
+    }
+
+    // export default function(a: number, b: number) {}
+    if (ts.isFunctionDeclaration(node)) {
+      const mods = node.modifiers
+      const isDefault = mods?.some(mod => mod.kind == ts.SyntaxKind.DefaultKeyword)
+      const isExport = mods?.some(mod => mod.kind == ts.SyntaxKind.ExportKeyword)
+      if (isDefault && isExport) {
+        return dealExportDefaultFunction(node)
+      }
+    }
+
+    // only deal with top level
+    return node
+  }
+
+  return (sf: ts.SourceFile) => {
+    return ts.visitEachChild(sf, visitor, ctx)
   }
 }
 
