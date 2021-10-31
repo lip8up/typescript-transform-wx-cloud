@@ -8,9 +8,6 @@ import {
   findTopLevelFunctionByIdentifier
 } from './util'
 
-const wxCloudFunctionName = 'main'
-const wxCloudParamName = 'event'
-
 /**
  * 生成微信导出函数。
  *
@@ -25,12 +22,13 @@ const wxCloudParamName = 'event'
  *   return default_1(event.a, event.b)
  * }
  * ```
- *
- * @param func 导出的函数
- * @param parameters 函数参数
  */
-function generateWxMain(func: ts.Identifier, params: ts.NodeArray<ts.ParameterDeclaration>) {
-  const cloudParam = factory.createIdentifier(wxCloudParamName)
+function generateWxMain(
+  func: ts.Identifier,
+  params: ts.NodeArray<ts.ParameterDeclaration>,
+  { wxCloudFunctionName, wxCloudFirstParamName,  }: TransformerOptions
+) {
+  const cloudParam = factory.createIdentifier(wxCloudFirstParamName)
   const wxParams: string[] = []
   const callParams = params.map(param => {
     const name = param.name as ts.Identifier
@@ -66,15 +64,17 @@ function generateWxMain(func: ts.Identifier, params: ts.NodeArray<ts.ParameterDe
  *
  * @param node 节点
  */
-function dealExportAssignment(node: ts.ExportAssignment) {
+function dealExportAssignment(node: ts.ExportAssignment, options: TransformerOptions) {
   // export default async (a: number, b: number) => {}
   const arrowFunction = findChildByType<ts.ArrowFunction>(node, ts.isArrowFunction)
   if (arrowFunction != null) {
     // const default_1 = <original arrow function>
     const name = factory.createUniqueName('default')
     const declDefault = createSingleVariableStatement(name, arrowFunction)
-    // TODO: use params
-    const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters)
+
+    // 生成微信云函数入口
+    const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters, options)
+    options.wxCloudEmitParams?.(wxParams)
 
     return [ declDefault, wxMain ]
   }
@@ -84,8 +84,9 @@ function dealExportAssignment(node: ts.ExportAssignment) {
   if (name != null) {
     const func = findTopLevelFunctionByIdentifier(node.getSourceFile(), name)
     if (func != null) {
-      // TODO: use params
-      const { wxMain, wxParams } = generateWxMain(name, func.parameters)
+      // 生成微信云函数入口
+      const { wxMain, wxParams } = generateWxMain(name, func.parameters, options)
+      options.wxCloudEmitParams?.(wxParams)
       return wxMain
     }
   }
@@ -98,7 +99,7 @@ function dealExportAssignment(node: ts.ExportAssignment) {
  *
  * @param node 节点
  */
-function dealExportDefaultFunction(node: ts.FunctionDeclaration) {
+function dealExportDefaultFunction(node: ts.FunctionDeclaration, options: TransformerOptions) {
   // 若函数没有名字，则生成一个
   const name = node.name ?? factory.createUniqueName('default')
   // 去掉 export、default 关键字
@@ -107,37 +108,72 @@ function dealExportDefaultFunction(node: ts.FunctionDeclaration) {
   )
   // 复制一个新的函数
   const newFunc = cloneFunctionDeclaration(node, { modifiers, name })
-  // TODO: use params
-  const { wxMain, wxParams } = generateWxMain(name, node.parameters)
-
+  // 生成微信云函数入口
+  const { wxMain, wxParams } = generateWxMain(name, node.parameters, options)
+  options.wxCloudEmitParams?.(wxParams)
   return [ newFunc, wxMain ]
 }
 
-function transformer(ctx: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
-  const visitor: ts.Visitor = node => {
-    // export default async (a: number, b: number) => {}
-    // export default sum
-    if (ts.isExportAssignment(node)) {
-      return dealExportAssignment(node)
-    }
+/**
+ * Transformer 选项。
+ */
+export interface TransformerOptions {
+  /**
+   * 微信云函数导出名，默认 main，一般不用改。
+   */
+  wxCloudFunctionName: string
 
-    // export default function(a: number, b: number) {}
-    if (ts.isFunctionDeclaration(node)) {
-      const mods = node.modifiers
-      const isDefault = mods?.some(mod => mod.kind == ts.SyntaxKind.DefaultKeyword)
-      const isExport = mods?.some(mod => mod.kind == ts.SyntaxKind.ExportKeyword)
-      if (isDefault && isExport) {
-        return dealExportDefaultFunction(node)
+  /**
+   * 微信云函数第一个参数名，默认 event，一般不用改。
+   * 一般来说，第二个参数 context 用不到。
+   */
+  wxCloudFirstParamName: string
+
+  /**
+   * 调用者可传入该函数，本插件将分析到的参数名列表，作为参数传入该函数，供调用者使用。
+   */
+  wxCloudEmitParams?: (params: string[]) => void
+}
+
+const defaultTransformerOptions: TransformerOptions = {
+  wxCloudFunctionName: 'main',
+  wxCloudFirstParamName: 'event',
+}
+
+/**
+ * 使用选项，创建转换器
+ *
+ * @param options 选项
+ */
+export function makeTransformer(options?: Partial<TransformerOptions>) {
+  return (ctx: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
+    const opts = { ...defaultTransformerOptions, ...options }
+    const visitor: ts.Visitor = node => {
+      // export default async (a: number, b: number) => {}
+      // export default sum
+      if (ts.isExportAssignment(node)) {
+        return dealExportAssignment(node, opts)
       }
+
+      // export default function(a: number, b: number) {}
+      if (ts.isFunctionDeclaration(node)) {
+        const mods = node.modifiers
+        const isDefault = mods?.some(mod => mod.kind == ts.SyntaxKind.DefaultKeyword)
+        const isExport = mods?.some(mod => mod.kind == ts.SyntaxKind.ExportKeyword)
+        if (isDefault && isExport) {
+          return dealExportDefaultFunction(node, opts)
+        }
+      }
+
+      // only deal with top level
+      return node
     }
 
-    // only deal with top level
-    return node
-  }
-
-  return (sf: ts.SourceFile) => {
-    return ts.visitEachChild(sf, visitor, ctx)
+    return (sf: ts.SourceFile) => {
+      return ts.visitEachChild(sf, visitor, ctx)
+    }
   }
 }
 
-export default transformer
+/** 没有任何选项的默认转换器 */
+export default makeTransformer()

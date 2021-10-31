@@ -10,7 +10,7 @@
   "author": "lip8up <lip8up@qq.com>",
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "yarn clean && rollup -c",
+    "build": "yarn clean && rollup -c && :",
     "test": "jest --verbose",
     "testless": "jest --verbose --collectCoverage=false",
     "pub": "yarn test && yarn build && npm publish",
@@ -47,10 +47,10 @@
     "pre-commit": "lint-staged"
   },
   "lint-staged": {
-    "*.ts": [
-      "yarn test",
+    "src/*.ts": [
+      "yarn test tests",
       "yarn build",
-      "git add build"
+      "git add dist"
     ]
   }
 }

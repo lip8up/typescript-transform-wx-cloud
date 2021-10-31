@@ -33,11 +33,16 @@ export interface FunctionItem {
 }
 
 /**
+ * 模板函数类型。
+ */
+export type Template = (functions: FunctionItem[]) => string
+
+/**
  * 模板函数。
  *
  * @param functions 函数列表配置
  */
-export const defaultTemplate = (functions: FunctionItem[]) => {
+export const defaultTemplate: Template = functions => {
   const fns = functions.map(({ name, params }) => ({
     name,
     Name: ucfirst(name),

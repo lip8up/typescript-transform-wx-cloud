@@ -1,7 +1,7 @@
 import ts from 'typescript'
-import transformer from '@/transformer'
+import { makeTransformer, TransformerOptions } from '@/transformer'
 
-export default function compile(sourceCode: string) {
+export default function compile(sourceCode: string, options?: Partial<TransformerOptions>) {
   const source = ts.createSourceFile(
     'tests',
     sourceCode,
@@ -9,6 +9,7 @@ export default function compile(sourceCode: string) {
     true
   )
 
+  const transformer = makeTransformer(options)
   const result = ts.transform(source, [ transformer ])
   const transformed = result.transformed[0]
   const printer = ts.createPrinter()

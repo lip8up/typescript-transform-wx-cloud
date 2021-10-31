@@ -25,9 +25,13 @@ export interface FunctionItem {
     params: string[];
 }
 /**
+ * 模板函数类型。
+ */
+export declare type Template = (functions: FunctionItem[]) => string;
+/**
  * 模板函数。
  *
  * @param functions 函数列表配置
  */
-export declare const defaultTemplate: (functions: FunctionItem[]) => string;
+export declare const defaultTemplate: Template;
 export default defaultTemplate;

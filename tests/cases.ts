@@ -259,4 +259,13 @@ export default [
       export { source as default } from './util';
     `,
   },
+  {
+    name: 'export-default-expression',
+    input: source`
+      export default makeTransformer()
+    `,
+    output: source`
+      export default makeTransformer();
+    `,
+  },
 ]

@@ -100,8 +100,6 @@ function findTopLevelFunctionByIdentifier(sourceFile, identifier) {
     });
 }
 
-const wxCloudFunctionName = 'main';
-const wxCloudParamName = 'event';
 /**
  * 生成微信导出函数。
  *
@@ -116,12 +114,9 @@ const wxCloudParamName = 'event';
  *   return default_1(event.a, event.b)
  * }
  * ```
- *
- * @param func 导出的函数
- * @param parameters 函数参数
  */
-function generateWxMain(func, params) {
-    const cloudParam = factory.createIdentifier(wxCloudParamName);
+function generateWxMain(func, params, { wxCloudFunctionName, wxCloudFirstParamName, }) {
+    const cloudParam = factory.createIdentifier(wxCloudFirstParamName);
     const wxParams = [];
     const callParams = params.map(param => {
         const name = param.name;
@@ -151,15 +146,16 @@ function generateWxMain(func, params) {
  *
  * @param node 节点
  */
-function dealExportAssignment(node) {
+function dealExportAssignment(node, options) {
     // export default async (a: number, b: number) => {}
     const arrowFunction = findChildByType(node, ts.isArrowFunction);
     if (arrowFunction != null) {
         // const default_1 = <original arrow function>
         const name = factory.createUniqueName('default');
         const declDefault = createSingleVariableStatement(name, arrowFunction);
-        // TODO: use params
-        const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters);
+        // 生成微信云函数入口
+        const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters, options);
+        options.wxCloudEmitParams?.(wxParams);
         return [declDefault, wxMain];
     }
     // export default sum
@@ -167,8 +163,9 @@ function dealExportAssignment(node) {
     if (name != null) {
         const func = findTopLevelFunctionByIdentifier(node.getSourceFile(), name);
         if (func != null) {
-            // TODO: use params
-            const { wxMain, wxParams } = generateWxMain(name, func.parameters);
+            // 生成微信云函数入口
+            const { wxMain, wxParams } = generateWxMain(name, func.parameters, options);
+            options.wxCloudEmitParams?.(wxParams);
             return wxMain;
         }
     }
@@ -179,40 +176,55 @@ function dealExportAssignment(node) {
  *
  * @param node 节点
  */
-function dealExportDefaultFunction(node) {
+function dealExportDefaultFunction(node, options) {
     // 若函数没有名字，则生成一个
     const name = node.name ?? factory.createUniqueName('default');
     // 去掉 export、default 关键字
     const modifiers = node.modifiers?.filter(mod => mod.kind != ts.SyntaxKind.DefaultKeyword && mod.kind != ts.SyntaxKind.ExportKeyword);
     // 复制一个新的函数
     const newFunc = cloneFunctionDeclaration(node, { modifiers, name });
-    // TODO: use params
-    const { wxMain, wxParams } = generateWxMain(name, node.parameters);
+    // 生成微信云函数入口
+    const { wxMain, wxParams } = generateWxMain(name, node.parameters, options);
+    options.wxCloudEmitParams?.(wxParams);
     return [newFunc, wxMain];
 }
-function transformer(ctx) {
-    const visitor = node => {
-        // export default async (a: number, b: number) => {}
-        // export default sum
-        if (ts.isExportAssignment(node)) {
-            return dealExportAssignment(node);
-        }
-        // export default function(a: number, b: number) {}
-        if (ts.isFunctionDeclaration(node)) {
-            const mods = node.modifiers;
-            const isDefault = mods?.some(mod => mod.kind == ts.SyntaxKind.DefaultKeyword);
-            const isExport = mods?.some(mod => mod.kind == ts.SyntaxKind.ExportKeyword);
-            if (isDefault && isExport) {
-                return dealExportDefaultFunction(node);
+const defaultTransformerOptions = {
+    wxCloudFunctionName: 'main',
+    wxCloudFirstParamName: 'event',
+};
+/**
+ * 使用选项，创建转换器
+ *
+ * @param options 选项
+ */
+function makeTransformer(options) {
+    return (ctx) => {
+        const opts = { ...defaultTransformerOptions, ...options };
+        const visitor = node => {
+            // export default async (a: number, b: number) => {}
+            // export default sum
+            if (ts.isExportAssignment(node)) {
+                return dealExportAssignment(node, opts);
             }
-        }
-        // only deal with top level
-        return node;
-    };
-    return (sf) => {
-        return ts.visitEachChild(sf, visitor, ctx);
+            // export default function(a: number, b: number) {}
+            if (ts.isFunctionDeclaration(node)) {
+                const mods = node.modifiers;
+                const isDefault = mods?.some(mod => mod.kind == ts.SyntaxKind.DefaultKeyword);
+                const isExport = mods?.some(mod => mod.kind == ts.SyntaxKind.ExportKeyword);
+                if (isDefault && isExport) {
+                    return dealExportDefaultFunction(node, opts);
+                }
+            }
+            // only deal with top level
+            return node;
+        };
+        return (sf) => {
+            return ts.visitEachChild(sf, visitor, ctx);
+        };
     };
 }
+/** 没有任何选项的默认转换器 */
+var transformer = makeTransformer();
 
-export { transformer as default };
+export { transformer as default, makeTransformer };
 //# sourceMappingURL=transformer.mjs.map
