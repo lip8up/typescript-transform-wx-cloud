@@ -124,6 +124,12 @@ function findTopLevelFunctionByIdentifier(sourceFile, identifier) {
  * ```
  */
 function generateWxMain(func, params, { wxCloudFunctionName, wxCloudFirstParamName, }) {
+    // import cloud from 'wx-server-sdk'
+    // prettier-ignore
+    const cloudImport = ts.factory.createImportDeclaration(undefined, undefined, ts.factory.createImportClause(false, ts.factory.createIdentifier('cloud'), undefined), ts.factory.createStringLiteral('wx-server-sdk'));
+    // cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+    // prettier-ignore
+    const cloudInit = ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createPropertyAccessExpression(ts.factory.createIdentifier("cloud"), ts.factory.createIdentifier("init")), undefined, [ts.factory.createObjectLiteralExpression([ts.factory.createPropertyAssignment(ts.factory.createIdentifier("env"), ts.factory.createPropertyAccessExpression(ts.factory.createIdentifier("cloud"), ts.factory.createIdentifier("DYNAMIC_CURRENT_ENV")))], false)]));
     const cloudParam = ts.factory.createIdentifier(wxCloudFirstParamName);
     const wxParams = [];
     const callParams = params.map(param => {
@@ -135,7 +141,7 @@ function generateWxMain(func, params, { wxCloudFunctionName, wxCloudFirstParamNa
     //   return default_1(event.a, event.b)
     // }
     // prettier-ignore
-    const wxMain = createFunctionDeclaration({
+    const exportMain = createFunctionDeclaration({
         modifiers: [
             ts.factory.createModifier(ts__default["default"].SyntaxKind.ExportKeyword),
             ts.factory.createModifier(ts__default["default"].SyntaxKind.AsyncKeyword)
@@ -147,6 +153,7 @@ function generateWxMain(func, params, { wxCloudFunctionName, wxCloudFirstParamNa
             ts.factory.createReturnStatement(ts.factory.createCallExpression(func, undefined, callParams))
         ], true)
     });
+    const wxMain = [cloudImport, cloudInit, exportMain];
     return { wxMain, wxParams };
 }
 /**
@@ -164,7 +171,7 @@ function dealExportAssignment(node, options) {
         // 生成微信云函数入口
         const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters, options);
         options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams);
-        return [declDefault, wxMain];
+        return [declDefault, ...wxMain];
     }
     // export default sum
     const name = findChildByType(node, ts__default["default"].isIdentifier);
@@ -194,7 +201,7 @@ function dealExportDefaultFunction(node, options) {
     // 生成微信云函数入口
     const { wxMain, wxParams } = generateWxMain(name, node.parameters, options);
     options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams);
-    return [newFunc, wxMain];
+    return [newFunc, ...wxMain];
 }
 const defaultTransformerOptions = {
     wxCloudFunctionName: 'main',
