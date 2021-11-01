@@ -145,8 +145,8 @@ const defaultTransformerOptions: TransformerOptions = {
  *
  * @param options 选项
  */
-export function makeTransformer(options?: Partial<TransformerOptions>) {
-  return (ctx: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
+export function makeTransformerFactory(options?: Partial<TransformerOptions>) {
+  const factory: ts.TransformerFactory<ts.SourceFile> = ctx => {
     const opts = { ...defaultTransformerOptions, ...options }
     const visitor: ts.Visitor = node => {
       // export default async (a: number, b: number) => {}
@@ -173,7 +173,10 @@ export function makeTransformer(options?: Partial<TransformerOptions>) {
       return ts.visitEachChild(sf, visitor, ctx)
     }
   }
+  return factory
 }
 
-/** 没有任何选项的默认转换器 */
-export default makeTransformer()
+/**
+ * 没有任何选项的默认转换器
+ */
+export default makeTransformerFactory()

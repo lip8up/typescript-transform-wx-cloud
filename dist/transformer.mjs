@@ -197,8 +197,8 @@ const defaultTransformerOptions = {
  *
  * @param options 选项
  */
-function makeTransformer(options) {
-    return (ctx) => {
+function makeTransformerFactory(options) {
+    const factory = ctx => {
         const opts = { ...defaultTransformerOptions, ...options };
         const visitor = node => {
             // export default async (a: number, b: number) => {}
@@ -222,9 +222,12 @@ function makeTransformer(options) {
             return ts.visitEachChild(sf, visitor, ctx);
         };
     };
+    return factory;
 }
-/** 没有任何选项的默认转换器 */
-var transformer = makeTransformer();
+/**
+ * 没有任何选项的默认转换器
+ */
+var transformer = makeTransformerFactory();
 
-export { transformer as default, makeTransformer };
+export { transformer as default, makeTransformerFactory };
 //# sourceMappingURL=transformer.mjs.map
