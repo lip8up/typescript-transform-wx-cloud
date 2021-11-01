@@ -13,8 +13,11 @@
     "build": "yarn clean && rollup -c && :",
     "test": "jest --verbose",
     "testless": "jest --verbose --collectCoverage=false",
-    "pub": "yarn test && yarn build && npm publish",
+    "pub": "yarn test && yarn build && yarn publish",
     "runner": "ts-node -r tsconfig-paths/register -P tests/tsconfig.json tests/runner.ts"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "common-tags": "^1.8.0"
