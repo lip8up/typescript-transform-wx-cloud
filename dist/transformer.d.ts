@@ -23,8 +23,3 @@ export interface TransformerOptions {
  * @param options 选项
  */
 export declare function makeTransformerFactory(options?: Partial<TransformerOptions>): ts.TransformerFactory<ts.SourceFile>;
-declare const _default: ts.TransformerFactory<ts.SourceFile>;
-/**
- * 没有任何选项的默认转换器
- */
-export default _default;

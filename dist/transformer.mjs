@@ -224,10 +224,6 @@ function makeTransformerFactory(options) {
     };
     return factory;
 }
-/**
- * 没有任何选项的默认转换器
- */
-var transformer = makeTransformerFactory();
 
-export { transformer as default, makeTransformerFactory };
+export { makeTransformerFactory };
 //# sourceMappingURL=transformer.mjs.map

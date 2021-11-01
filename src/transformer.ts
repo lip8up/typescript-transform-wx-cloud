@@ -175,8 +175,3 @@ export function makeTransformerFactory(options?: Partial<TransformerOptions>) {
   }
   return factory
 }
-
-/**
- * 没有任何选项的默认转换器
- */
-export default makeTransformerFactory()

@@ -5,7 +5,8 @@ import pkg from './package.json'
 const devDeps = Object.keys(pkg.devDependencies || {})
 const deps = Object.keys(pkg.dependencies || {}).concat(devDeps)
 
-export default [
+/** @type {import('rollup').RollupOptions} */
+const config = [
   {
     input: 'src/transformer.ts',
     output: [
@@ -30,3 +31,5 @@ export default [
     ]
   }
 ]
+
+export default config
