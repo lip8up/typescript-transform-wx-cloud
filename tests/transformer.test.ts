@@ -11,21 +11,24 @@ test('emit-wx-param-names', () => {
   let callTimes = 0
 
   compile(`export default () => {}`, {
-    wxCloudEmitParams(params) {
+    wxCloudEmitParams(fileName, params) {
+      expect(fileName).toEqual('test.ts')
       expect(params).toEqual([])
       callTimes++
     }
   })
 
   compile(`const some = (a: number); export default some;`, {
-    wxCloudEmitParams(params) {
+    wxCloudEmitParams(fileName, params) {
+      expect(fileName).toEqual('test.ts')
       expect(params).toEqual(['a'])
       callTimes++
     }
   })
 
   compile(`export default function(a: number, b: number) {}`, {
-    wxCloudEmitParams(params) {
+    wxCloudEmitParams(fileName, params) {
+      expect(fileName).toEqual('test.ts')
       expect(params).toEqual(['a', 'b'])
       callTimes++
     }

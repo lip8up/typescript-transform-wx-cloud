@@ -74,7 +74,7 @@ function dealExportAssignment(node: ts.ExportAssignment, options: TransformerOpt
 
     // 生成微信云函数入口
     const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters, options)
-    options.wxCloudEmitParams?.(wxParams)
+    options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams)
 
     return [ declDefault, wxMain ]
   }
@@ -86,7 +86,7 @@ function dealExportAssignment(node: ts.ExportAssignment, options: TransformerOpt
     if (func != null) {
       // 生成微信云函数入口
       const { wxMain, wxParams } = generateWxMain(name, func.parameters, options)
-      options.wxCloudEmitParams?.(wxParams)
+      options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams)
       return wxMain
     }
   }
@@ -110,7 +110,7 @@ function dealExportDefaultFunction(node: ts.FunctionDeclaration, options: Transf
   const newFunc = cloneFunctionDeclaration(node, { modifiers, name })
   // 生成微信云函数入口
   const { wxMain, wxParams } = generateWxMain(name, node.parameters, options)
-  options.wxCloudEmitParams?.(wxParams)
+  options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams)
   return [ newFunc, wxMain ]
 }
 
@@ -132,7 +132,7 @@ export interface TransformerOptions {
   /**
    * 调用者可传入该函数，本插件将分析到的参数名列表，作为参数传入该函数，供调用者使用。
    */
-  wxCloudEmitParams?: (params: string[]) => void
+  wxCloudEmitParams?: (fileName: string, params: string[]) => void
 }
 
 const defaultTransformerOptions: TransformerOptions = {

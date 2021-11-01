@@ -3,7 +3,7 @@ import { makeTransformerFactory, TransformerOptions } from '@/transformer'
 
 export default function compile(sourceCode: string, options?: Partial<TransformerOptions>) {
   const source = ts.createSourceFile(
-    'tests',
+    'test.ts',
     sourceCode,
     ts.ScriptTarget.ES2016,
     true

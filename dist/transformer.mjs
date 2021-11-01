@@ -155,7 +155,7 @@ function dealExportAssignment(node, options) {
         const declDefault = createSingleVariableStatement(name, arrowFunction);
         // 生成微信云函数入口
         const { wxMain, wxParams } = generateWxMain(name, arrowFunction.parameters, options);
-        options.wxCloudEmitParams?.(wxParams);
+        options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams);
         return [declDefault, wxMain];
     }
     // export default sum
@@ -165,7 +165,7 @@ function dealExportAssignment(node, options) {
         if (func != null) {
             // 生成微信云函数入口
             const { wxMain, wxParams } = generateWxMain(name, func.parameters, options);
-            options.wxCloudEmitParams?.(wxParams);
+            options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams);
             return wxMain;
         }
     }
@@ -185,7 +185,7 @@ function dealExportDefaultFunction(node, options) {
     const newFunc = cloneFunctionDeclaration(node, { modifiers, name });
     // 生成微信云函数入口
     const { wxMain, wxParams } = generateWxMain(name, node.parameters, options);
-    options.wxCloudEmitParams?.(wxParams);
+    options.wxCloudEmitParams?.(node.getSourceFile().fileName, wxParams);
     return [newFunc, wxMain];
 }
 const defaultTransformerOptions = {

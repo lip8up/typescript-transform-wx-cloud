@@ -15,7 +15,7 @@ export interface TransformerOptions {
     /**
      * 调用者可传入该函数，本插件将分析到的参数名列表，作为参数传入该函数，供调用者使用。
      */
-    wxCloudEmitParams?: (params: string[]) => void;
+    wxCloudEmitParams?: (fileName: string, params: string[]) => void;
 }
 /**
  * 使用选项，创建转换器
