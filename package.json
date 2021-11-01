@@ -1,6 +1,6 @@
 {
   "name": "typescript-transform-wx-cloud",
-  "version": "2.6.6",
+  "version": "2.8.8",
   "description": "TypeScript 函数转微信小程序云函数",
   "main": "dist/transformer.js",
   "module": "dist/transformer.mjs",

@@ -126,10 +126,11 @@ function findTopLevelFunctionByIdentifier(sourceFile, identifier) {
 function generateWxMain(func, params, { wxCloudFunctionName, wxCloudFirstParamName, }) {
     // import cloud from 'wx-server-sdk'
     // prettier-ignore
-    const cloudImport = ts.factory.createImportDeclaration(undefined, undefined, ts.factory.createImportClause(false, ts.factory.createIdentifier('cloud'), undefined), ts.factory.createStringLiteral('wx-server-sdk'));
+    const cloud = ts.factory.createUniqueName('cloud');
+    const cloudImport = ts.factory.createImportDeclaration(undefined, undefined, ts.factory.createImportClause(false, cloud, undefined), ts.factory.createStringLiteral('wx-server-sdk'));
     // cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
     // prettier-ignore
-    const cloudInit = ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createPropertyAccessExpression(ts.factory.createIdentifier("cloud"), ts.factory.createIdentifier("init")), undefined, [ts.factory.createObjectLiteralExpression([ts.factory.createPropertyAssignment(ts.factory.createIdentifier("env"), ts.factory.createPropertyAccessExpression(ts.factory.createIdentifier("cloud"), ts.factory.createIdentifier("DYNAMIC_CURRENT_ENV")))], false)]));
+    const cloudInit = ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createPropertyAccessExpression(cloud, 'init'), undefined, [ts.factory.createObjectLiteralExpression([ts.factory.createPropertyAssignment('env', ts.factory.createPropertyAccessExpression(cloud, 'DYNAMIC_CURRENT_ENV'))], false)]));
     const cloudParam = ts.factory.createIdentifier(wxCloudFirstParamName);
     const wxParams = [];
     const callParams = params.map(param => {

@@ -15,8 +15,8 @@ export default [
       const default_1 = (a: number, b: number) => {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return default_1(event.a, event.b);
       }
@@ -35,8 +35,8 @@ export default [
       const default_1 = async (a: number, b: number) => {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return default_1(event.a, event.b);
       }
@@ -55,8 +55,8 @@ export default [
       const default_1 = (a: number, b: number) => {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return default_1(event.a, event.b);
       }
@@ -78,8 +78,8 @@ export default [
       const sum = (a: number, b: number) => {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }
@@ -99,8 +99,8 @@ export default [
       const sum = async (a: number, b: number) => {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }
@@ -120,8 +120,8 @@ export default [
       const sum = function (a: number, b: number) {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }
@@ -141,8 +141,8 @@ export default [
       const sum = async function (a: number, b: number) {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }
@@ -162,8 +162,8 @@ export default [
       const sum = async function named(a: number, b: number) {
           return a + b;
       };
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }
@@ -183,8 +183,8 @@ export default [
       async function named(a: number, b: number) {
           return a + b;
       }
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return named(event.a, event.b);
       }
@@ -205,8 +205,8 @@ export default [
       function default_1(a: number, b: number) {
           return a + b;
       }
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return default_1(event.a, event.b);
       }
@@ -225,8 +225,8 @@ export default [
       async function default_1(a: number, b: number) {
           return a + b;
       }
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return default_1(event.a, event.b);
       }
@@ -245,8 +245,8 @@ export default [
       async function sum(a: number, b: number) {
           return a + b;
       }
-      import cloud from "wx-server-sdk";
-      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
       export async function main(event: any) {
           return sum(event.a, event.b);
       }

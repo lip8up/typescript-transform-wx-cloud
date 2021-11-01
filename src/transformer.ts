@@ -30,32 +30,23 @@ function generateWxMain(
 ) {
   // import cloud from 'wx-server-sdk'
   // prettier-ignore
+  const cloud = factory.createUniqueName('cloud')
   const cloudImport = factory.createImportDeclaration(
     undefined,
     undefined,
-    factory.createImportClause(
-      false,
-      factory.createIdentifier('cloud'),
-      undefined
-    ),
+    factory.createImportClause(false, cloud, undefined),
     factory.createStringLiteral('wx-server-sdk')
   )
 
   // cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
   // prettier-ignore
   const cloudInit = factory.createExpressionStatement(factory.createCallExpression(
-    factory.createPropertyAccessExpression(
-      factory.createIdentifier("cloud"),
-      factory.createIdentifier("init")
-    ),
+    factory.createPropertyAccessExpression(cloud, 'init'),
     undefined,
     [factory.createObjectLiteralExpression(
       [factory.createPropertyAssignment(
-        factory.createIdentifier("env"),
-        factory.createPropertyAccessExpression(
-          factory.createIdentifier("cloud"),
-          factory.createIdentifier("DYNAMIC_CURRENT_ENV")
-        )
+        'env',
+        factory.createPropertyAccessExpression(cloud, 'DYNAMIC_CURRENT_ENV')
       )],
       false
     )]
