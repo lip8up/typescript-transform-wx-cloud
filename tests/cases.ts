@@ -253,6 +253,152 @@ export default [
     `,
   },
 
+  // 明确声明 main 函数
+  {
+    name: 'export-main-function',
+    input: source`
+      import util from './util'
+      export async function main(event: any, context: any) {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
+      export async function main(event: any, context: any) {
+      }
+    `,
+  },
+  {
+    name: 'export-main-function-with-sdk',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      export async function main(event: any, context: any) {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      export async function main(event: any, context: any) {
+      }
+    `,
+  },
+  {
+    name: 'export-main-function-with-init',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' })
+      export async function main(event: any, context: any) {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' });
+      export async function main(event: any, context: any) {
+      }
+    `,
+  },
+  {
+    name: 'export-main-const',
+    input: source`
+      import util from './util'
+      export const main = async (event: any, context: any) => {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
+      export const main = async (event: any, context: any) => {
+      };
+    `,
+  },
+  {
+    name: 'export-main-const-with-sdk',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      export const main = async (event: any, context: any) => {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      export const main = async (event: any, context: any) => {
+      };
+    `,
+  },
+  {
+    name: 'export-main-const-with-init',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' })
+      export const main = async (event: any, context: any) => {
+      }
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' });
+      export const main = async (event: any, context: any) => {
+      };
+    `,
+  },
+  {
+    name: 'export-main-const-alias',
+    input: source`
+      import util from './util'
+      const sum = async (a: number, b: number) => a + b
+      export const main = sum
+    `,
+    output: source`
+      import util from './util';
+      const sum = async (a: number, b: number) => a + b;
+      import cloud_1 from "wx-server-sdk";
+      cloud_1.init({ env: cloud_1.DYNAMIC_CURRENT_ENV });
+      export const main = sum;
+    `,
+  },
+  {
+    name: 'export-main-const-alias-with-sdk',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      const sum = async (a: number, b: number) => a + b
+      export const main = sum
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      const sum = async (a: number, b: number) => a + b;
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+      export const main = sum;
+    `,
+  },
+  {
+    name: 'export-main-const-alias-with-init',
+    input: source`
+      import util from './util'
+      import cloud from 'wx-server-sdk'
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' })
+      const sum = async (a: number, b: number) => a + b
+      export const main = sum
+    `,
+    output: source`
+      import util from './util';
+      import cloud from 'wx-server-sdk';
+      cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV, some: 'value' });
+      const sum = async (a: number, b: number) => a + b;
+      export const main = sum;
+    `,
+  },
+
   // 其他形式：不支持
   {
     name: 'export-default-variable-from-other-lib',

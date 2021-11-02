@@ -2,6 +2,14 @@ import ts, { factory } from 'typescript'
 
 type CreateFunctionParams = Parameters<typeof factory.createFunctionDeclaration>
 
+export function isEqual<T extends ts.Identifier>(node: T, name: string | T): node is T {
+  if (ts.isIdentifier(node)) {
+    const text = typeof name === 'string' ? name : name.escapedText.toString()
+    return node.escapedText.toString() === text
+  }
+  return false
+}
+
 /**
  * 函数配置。
  */
@@ -91,9 +99,6 @@ export function createParameterDeclaration(options: ParamsOptions) {
   )
 }
 
-type CreateVariableParams = Parameters<typeof factory.createVariableDeclaration>
-type VariableName = CreateVariableParams[0]
-
 /**
  * 创建单个变量声明语句。
  *
@@ -123,8 +128,8 @@ export function createSingleVariableStatement(
  * @param node 要查找的父节点
  * @param test 测试函数
  */
-export function findChildByType<T extends ts.Node>(node: ts.Node, test: (node: ts.Node) => boolean): T | undefined {
-  return ts.forEachChild(node, child => test(child) ? child as T : findChildByType(child, test))
+export function findChildByType<T extends ts.Node>(node: ts.Node, test: (node: ts.Node) => node is T): T | undefined {
+  return ts.forEachChild(node, child => test(child) ? child : findChildByType(child, test))
 }
 
 /**
@@ -133,8 +138,8 @@ export function findChildByType<T extends ts.Node>(node: ts.Node, test: (node: t
  * @param identifier 预绑定的名称
  */
 export function isIdentifierNameFunction(identifier: ts.Identifier) {
-  const name = identifier.escapedText.toString()
-  return (node: ts.Node) => ts.isIdentifier(node) && node.escapedText.toString() == name
+  return (node: ts.Node): node is ts.Node =>
+    ts.isIdentifier(node) && isEqual(node, identifier)
 }
 
 /**
@@ -142,13 +147,16 @@ export function isIdentifierNameFunction(identifier: ts.Identifier) {
  */
 export type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
 
+const isArrowFunctionOrFunctionExpression = (node: ts.Node): node is FunctionLike =>
+  ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+
 /**
  * 使用指定的名称，查找顶级函数。
  *
  * @param sourceFile 源文件对象
  * @param identifier 函数名称
  */
-export function findTopLevelFunctionByIdentifier(
+export function findTopFunction(
   sourceFile: ts.SourceFile,
   identifier: ts.Identifier
 ): FunctionLike | undefined {
@@ -161,7 +169,7 @@ export function findTopLevelFunctionByIdentifier(
     // const sum = (function name(a: number, b: number) {})
     if (ts.isVariableStatement(child)) {
       const name = findChildByType(child, isIdentifierName)
-      const found = name && findChildByType<FunctionLike>(name.parent, n => ts.isArrowFunction(n) || ts.isFunctionExpression(n))
+      const found = name && findChildByType(name.parent, isArrowFunctionOrFunctionExpression)
       if (found != null) {
         return found
       }
@@ -175,4 +183,207 @@ export function findTopLevelFunctionByIdentifier(
       }
     }
   })
+}
+
+/**
+ * 查找 import name from moduleName 中的 name。
+ *
+ * @param sourceFile 源文件对象
+ * @param moduleName 模块名称
+ */
+export function findImport(
+  sourceFile: ts.SourceFile,
+  moduleName: string
+) {
+  return ts.forEachChild(sourceFile, child => {
+    if (ts.isImportDeclaration(child)) {
+      const text = child.moduleSpecifier.getText().replace(/'|"/g, '')
+      if (text == moduleName) {
+        return {
+          importName: child.importClause?.name,
+          importDeclaration: child
+        }
+      }
+    }
+  })
+}
+
+/**
+ * 创建导入语句 import name from moduleName。
+ *
+ * @param name 导入变量名
+ * @param moduleName 导入的模块名
+ */
+export function createImport(name: string | ts.Identifier, moduleName: string) {
+  const importName = typeof name === 'string' ? factory.createUniqueName(name) : name
+  const importDeclaration = factory.createImportDeclaration(
+    undefined,
+    undefined,
+    factory.createImportClause(false, importName, undefined),
+    factory.createStringLiteral(moduleName)
+  )
+  return { importName, importDeclaration }
+}
+
+/**
+ * 确保 import name from moduleName 语句被声明，若没有声明，则添加声明。
+ *
+ * @param sourceFile 源文件
+ * @param name 导入变量名
+ * @param moduleName 导入的模块名
+ */
+export function ensureImport(
+  sourceFile: ts.SourceFile,
+  name: string | ts.Identifier,
+  moduleName: string
+) {
+  const { importName } = findImport(sourceFile, moduleName) || {}
+  return importName == null
+    ? createImport(name, moduleName)
+    : { importName, importDeclaration: undefined }
+}
+
+/**
+ * 查找是否有 cloud.init({}) 这样的对象属性调用。
+ *
+ * @param sourceFile 源文件
+ * @param object 对象名
+ * @param name 对象属性名
+ */
+export function hasTopPropertyAccessCall(
+  sourceFile: ts.SourceFile,
+  object: string | ts.Identifier,
+  property: string | ts.Identifier
+) {
+  const found = ts.forEachChild(sourceFile, child => {
+    if (ts.isExpressionStatement(child)) {
+      const call = findChildByType(child, ts.isCallExpression)
+      if (call != null) {
+        const access = findChildByType(call, ts.isPropertyAccessExpression)
+        if (access != null) {
+          const { expression, name } = access
+          if (
+            ts.isIdentifier(expression)
+            && ts.isIdentifier(name)
+            && isEqual(expression, object)
+            && isEqual(name, property)
+          ) {
+            return call
+          }
+        }
+      }
+    }
+  })
+  return found !== undefined
+}
+
+/**
+ * 确保 cloud.init 被调用，若没有，则添加 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV }) 调用。
+ *
+ * @param sourceFile 源文件
+ * @param object 对象名
+ * @param property 对象属性名
+ */
+export function ensureCloudInit(
+  sourceFile: ts.SourceFile,
+  object: ts.Identifier
+) {
+  const property = 'init'
+  // 若已有 cloud.init 调用，返回 undefined
+  if (hasTopPropertyAccessCall(sourceFile, object, property)) {
+    return undefined
+  }
+  // cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+  // prettier-ignore
+  const cloudInit = factory.createExpressionStatement(factory.createCallExpression(
+    factory.createPropertyAccessExpression(object, property),
+    undefined,
+    [factory.createObjectLiteralExpression(
+      [factory.createPropertyAssignment(
+        'env',
+        factory.createPropertyAccessExpression(object, 'DYNAMIC_CURRENT_ENV')
+      )],
+      false
+    )]
+  ))
+  return cloudInit
+}
+
+/**
+ * 判断节点的 modifiers 是否含有特定的 modifier。
+ *
+ * @param node 节点
+ * @param kind 类型
+ */
+export function hasModifier(node: ts.Node, kind: ts.SyntaxKind) {
+  const has = node.modifiers?.some(mod => mod.kind == kind)
+  return has === true
+}
+
+/**
+ * 是否含有 default 修饰符。
+ *
+ * @param node 节点
+ */
+export function hasDefault(node: ts.Node) {
+  return hasModifier(node, ts.SyntaxKind.DefaultKeyword)
+}
+
+/**
+ * 是否含有 export 修饰符。
+ *
+ * @param node 节点
+ */
+ export function hasExport(node: ts.Node) {
+  return hasModifier(node, ts.SyntaxKind.ExportKeyword)
+}
+
+/**
+ * 顶层是否含有导出的 export main。
+ *
+ * 支持以下形式：
+ * export const main = async () => {}
+ * export const main = function() {}
+ * export async function main() {}
+ * function sum() {}
+ * export const main = sum
+ *
+ * @param node 节点
+ * @param name 名称，通常为 main
+ */
+export function getExportMain(node: ts.Node, name: string) {
+  // export const main = async () => {}
+  if (ts.isVariableStatement(node) && hasExport(node)) {
+    const variable = findChildByType(node, ts.isVariableDeclaration)
+    if (
+      variable != null
+      && ts.isIdentifier(variable.name)
+      && isEqual(variable.name, name)
+      && variable.initializer != null
+    ) {
+      const main = variable.name
+      if (isArrowFunctionOrFunctionExpression(variable.initializer)) {
+        return { main, func: variable.initializer }
+      }
+      // 支持以下情况
+      // function sum() {}
+      // export const main = sum
+      if (ts.isIdentifier(variable.initializer)) {
+        const func = findTopFunction(node.getSourceFile(), variable.initializer)
+        if (func != null) {
+          return { main, func }
+        }
+      }
+    }
+  }
+
+  if (ts.isFunctionDeclaration(node) && hasExport(node)) {
+    if (
+      node.name != null
+      && ts.isIdentifier(node.name)
+      && isEqual(node.name, name)
+    ) {
+      return { main: node.name, func: node }
+    }
+  }
 }
