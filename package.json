@@ -1,6 +1,6 @@
 {
   "name": "typescript-transform-wx-cloud",
-  "version": "3.9.9",
+  "version": "4.6.6",
   "description": "TypeScript 函数转微信小程序云函数",
   "license": "MIT",
   "repository": "git@github.com:lip8up/typescript-transform-wx-cloud.git",
@@ -9,7 +9,8 @@
   "module": "dist/transformer.mjs",
   "types": "dist/transformer.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "clean": "rimraf ./dist",
