@@ -8,7 +8,7 @@ const deps = Object.keys(pkg.dependencies || {}).concat(devDeps)
 /** @type {import('rollup').RollupOptions} */
 const config = [
   {
-    input: 'src/transformer.ts',
+    input: 'src/TransformerFactory.ts',
     output: [
       {
         file: pkg.main,
