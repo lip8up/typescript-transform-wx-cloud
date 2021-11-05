@@ -1,8 +1,8 @@
-import compile from './util'
+import compiler from './compiler'
 import cases from './cases'
 
 for (const { name, input } of cases) {
-  const output = compile(input)
+  const output = compiler(input)
   console.log(`\n// ==> ${name}:`)
   console.log(`// ---------------- input ----------------`)
   console.log(input.trim())

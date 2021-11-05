@@ -339,7 +339,7 @@ export function hasDefault(node: ts.Node) {
 }
 
 /**
- * 顶层是否含有导出的 export main。
+ * 获取顶层导出的 export main 函数。
  *
  * 支持以下形式：
  * export const main = async () => {}

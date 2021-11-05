@@ -1,6 +1,6 @@
 {
   "name": "typescript-transform-wx-cloud",
-  "version": "4.6.6",
+  "version": "4.8.8",
   "description": "TypeScript 函数转微信小程序云函数",
   "license": "MIT",
   "repository": "git@github.com:lip8up/typescript-transform-wx-cloud.git",
@@ -24,7 +24,8 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "common-tags": "^1.8.0"
+    "common-tags": "^1.8.0",
+    "typed-events.ts": "^0.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.0.6",
